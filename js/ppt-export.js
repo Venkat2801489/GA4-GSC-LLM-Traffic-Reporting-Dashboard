@@ -135,6 +135,8 @@ window.PPT_EXPORT = (() => {
         document.querySelectorAll('input[name="ppt-mode"]').forEach(r => {
             r.addEventListener('change', e => modalState.reportMode = e.target.value);
         });
+
+        document.getElementById('ppt-generate-btn')?.addEventListener('click', generate);
     });
 
     // ── Slides Framework ──────────────────────────────────────────
