@@ -20,13 +20,13 @@ window.PPT_EXPORT = (() => {
     }
 
     async function generateReport(state) {
-        if (typeof pptxgen === 'undefined') {
+        if (typeof PptxGenJS === 'undefined') {
             DASHBOARD.toast('Error: PptxGenJS library is missing.', 'error');
             return;
         }
 
         DASHBOARD.toast('Generating PowerPoint format...', 'info', 3000);
-        let pptx = new pptxgen();
+        let pptx = new PptxGenJS();
         pptx.layout = 'LAYOUT_16x9';
         pptx.author = 'LLM Traffic Dashboard';
         pptx.title = 'Traffic & Performance Report';
