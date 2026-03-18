@@ -147,7 +147,7 @@ window.PPT_EXPORT = (() => {
     function addHeaderFooter(slide, title) {
         slide.addText(title, { x: 0.5, y: 0.4, w: '90%', h: 0.5, color: THEME.textMain, fontSize: 24, bold: true });
         // Footer line
-        slide.addShape(slide.ShapeType.rect, { x: 0.5, y: 0.95, w: 9, h: 0.02, fill: THEME.accent });
+        slide.addShape('rect', { x: 0.5, y: 0.95, w: 9, h: 0.02, fill: THEME.accent });
         const cmpText = modalState.compareMode ? ` (vs ${modalState.prevStartDate} to ${modalState.prevEndDate})` : '';
         const footText = `${modalState.clientName || 'Client'} | ${modalState.startDate} to ${modalState.endDate}${cmpText}`;
         slide.addText(footText, { x: 0.5, y: 1.0, w: 9, h: 0.3, color: THEME.textSub, fontSize: 10, align: 'right' });
@@ -162,7 +162,7 @@ window.PPT_EXPORT = (() => {
         slide.addText('Performance Overview', { x: 1, y: 1.5, w: 8, h: 1, color: THEME.textMain, fontSize: 44, bold: true });
         slide.addText(`${clientName} | ${sd} to ${ed}`, { x: 1, y: 2.5, w: 8, h: 0.5, color: THEME.accent, fontSize: 20 });
         
-        slide.addShape(slide.ShapeType.rect, { x: 1, y: 3.2, w: 1, h: 0.05, fill: THEME.accent });
+        slide.addShape('rect', { x: 1, y: 3.2, w: 1, h: 0.05, fill: THEME.accent });
         slide.addText(`Prepared via LLM Traffic Dashboard`, { x: 1, y: 4.5, w: 5, h: 0.5, color: THEME.textSub, fontSize: 12 });
     }
 
@@ -194,7 +194,7 @@ window.PPT_EXPORT = (() => {
             let row = Math.floor(i / 2), col = i % 2;
             let cx = xRoot + (col * (wC + 0.5)), cy = yRoot + (row * (hC + 0.4));
             
-            slide.addShape(slide.ShapeType.roundRect, { x: cx, y: cy, w: wC, h: hC, fill: THEME.cardBg, roundness: 0.1 });
+            slide.addShape('roundRect', { x: cx, y: cy, w: wC, h: hC, fill: THEME.cardBg, roundness: 0.1 });
             slide.addText(m.label, { x: cx + 0.2, y: cy + 0.2, w: wC - 0.4, h: 0.3, color: THEME.textSub, fontSize: 14, bold: true });
             slide.addText(m.val, { x: cx + 0.2, y: cy + 0.6, w: wC - 0.4, h: 0.6, color: THEME.textMain, fontSize: 36, bold: true });
             
@@ -216,7 +216,7 @@ window.PPT_EXPORT = (() => {
         const rows = window._ga4ChannelRows.slice(0, 5); // top 5
         let x = 0.5, y = 1.8;
         rows.forEach(r => {
-            slide.addShape(slide.ShapeType.rect, { x, y, w: 9, h: 0.6, fill: THEME.cardBg });
+            slide.addShape('rect', { x, y, w: 9, h: 0.6, fill: THEME.cardBg });
             slide.addText(r.sessionDefaultChannelGroup, { x: x+0.2, y: y+0.1, w: 3, h: 0.4, color: THEME.textMain, fontSize: 16, bold: true });
             slide.addText(fNum(r.sessions) + ' Sessions', { x: x+3.5, y: y+0.1, w: 2, h: 0.4, color: THEME.accent, fontSize: 16 });
             slide.addText(fPct(r.engagementRate) + ' Engagement', { x: x+6, y: y+0.1, w: 2, h: 0.4, color: THEME.textSub, fontSize: 14 });
@@ -272,7 +272,7 @@ window.PPT_EXPORT = (() => {
 
         let cx = 0.5;
         m.forEach(x => {
-            slide.addShape(slide.ShapeType.roundRect, { x: cx, y: 1.5, w: 2.1, h: 1.2, fill: THEME.cardBg, roundness: 0.1 });
+            slide.addShape('roundRect', { x: cx, y: 1.5, w: 2.1, h: 1.2, fill: THEME.cardBg, roundness: 0.1 });
             slide.addText(x.l, { x: cx, y: 1.6, w: 2.1, h: 0.3, align: 'center', color: THEME.textSub, fontSize: 12 });
             slide.addText(x.v, { x: cx, y: 1.9, w: 2.1, h: 0.5, align: 'center', color: THEME.textMain, fontSize: 24, bold: true });
             cx += 2.3;
