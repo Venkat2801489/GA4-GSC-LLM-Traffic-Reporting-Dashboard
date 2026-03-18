@@ -421,7 +421,7 @@ window.PPT_EXPORT = (() => {
 
         try {
             // Instantiate PptxGenJS completely natively
-            let pptx = new PptxGenJS();
+            let pptx = new pptxgen();
             pptx.layout = 'LAYOUT_16x9';
 
             const state = modalState;
