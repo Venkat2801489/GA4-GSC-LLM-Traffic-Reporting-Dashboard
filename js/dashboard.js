@@ -2,7 +2,7 @@
  * dashboard.js — App Orchestration: state, date ranges, 4-tab routing, refresh, PDF export
  */
 
-const DASHBOARD = (() => {
+window.DASHBOARD = (() => {
 
     // ── State ─────────────────────────────────────────────────────────
     const state = {
@@ -454,13 +454,18 @@ const DASHBOARD = (() => {
 
     function getState() { return state; }
     function getCompareState() {
+        let propName = '';
+        if (state.property) {
+            propName = state.property.displayName || state.property.name || '';
+        }
         return {
             compareMode: state.compareMode,
             startDate: state.startDate,
             endDate: state.endDate,
             prevStartDate: state.prevStartDate,
             prevEndDate: state.prevEndDate,
-            preset: state.preset
+            preset: state.preset,
+            propertyName: propName
         };
     }
 

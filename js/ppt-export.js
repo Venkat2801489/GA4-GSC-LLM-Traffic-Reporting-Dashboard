@@ -74,6 +74,9 @@ window.PPT_EXPORT = (() => {
             modalState.prevStartDate = state.prevStartDate;
             modalState.prevEndDate = state.prevEndDate;
             modalState.compareMode = state.compareMode;
+            if (state.propertyName) {
+                modalState.clientName = state.propertyName;
+            }
         }
         syncModalUI();
         document.getElementById('ppt-modal-overlay').style.display = 'flex';
