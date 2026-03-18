@@ -454,6 +454,7 @@ window.PPT_EXPORT = (() => {
         } catch (e) {
             console.error('PPT Error:', e);
             if (window.DASHBOARD) DASHBOARD.toast('Failed to generate PPT: ' + e.message, 'error');
+            alert('An error occurred while generating the PPT: ' + e.message);
         } finally {
             if (btnText) btnText.textContent = '▶ Generate PPT';
             if (spinner) spinner.style.display = 'none';
