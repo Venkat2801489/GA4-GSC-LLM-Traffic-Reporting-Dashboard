@@ -254,10 +254,14 @@ const DASHBOARD = (() => {
         switchTab('llm');
     }
 
-    // ── PDF Export ────────────────────────────────────────────────────
+    // ── PDF/PPT Export ────────────────────────────────────────────────
     function exportPDF() {
-        toast('Preparing PDF…', 'info', 2000);
-        setTimeout(() => window.print(), 300);
+        if (window.PPT_EXPORT) {
+            PPT_EXPORT.generateReport(state);
+        } else {
+            toast('Preparing PDF…', 'info', 2000);
+            setTimeout(() => window.print(), 300);
+        }
     }
 
     // ── Date Picker ───────────────────────────────────────────────────
@@ -403,7 +407,9 @@ const DASHBOARD = (() => {
         }
     }
 
-    return { boot, refreshActive, applyPreset, toast, showPicker, switchTab };
+    function getState() { return state; }
+
+    return { boot, refreshActive, applyPreset, toast, showPicker, switchTab, getState };
 
 })();
 

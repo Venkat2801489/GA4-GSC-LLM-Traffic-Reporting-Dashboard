@@ -30,6 +30,9 @@
     <!-- Flatpickr -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 
+    <!-- PptxGenJS -->
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+
     <!-- Optional: configure your Client ID here instead of entering it in the UI -->
     <!-- <script>window.LLM_DASH_CONFIG = { clientId: 'YOUR_CLIENT_ID.apps.googleusercontent.com' };</script> -->
 </head>
@@ -136,8 +139,8 @@
                 </div>
                 <button id="refresh-btn" class="btn btn-ghost btn-sm btn-refresh" title="Refresh all data">↻
                     Refresh</button>
-                <button id="pdf-btn" class="btn btn-ghost btn-sm btn-pdf" title="Export current tab as PDF">⬇
-                    PDF</button>
+                <button id="pdf-btn" class="btn btn-ghost btn-sm btn-pdf" title="Export report as PowerPoint">⬇
+                    PPT Report</button>
                 <button id="switch-property-btn" class="btn btn-ghost btn-sm">⚙ Property</button>
             </div>
         </header>
@@ -639,6 +642,7 @@
     <script src="js/ga4-tab.js"></script>
     <script src="js/gsc-tab.js"></script>
     <script src="js/blended-tab.js"></script>
+    <script src="js/ppt-export.js"></script>
     <script src="js/dashboard.js"></script>
 
 </body>
