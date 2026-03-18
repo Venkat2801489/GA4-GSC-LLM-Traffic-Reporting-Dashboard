@@ -256,7 +256,7 @@ window.PPT_EXPORT = (() => {
     }
 
     function addSlide5_GSCSearch(pptx, state) {
-        if (!window._gscOverview) return;
+        if (!window._gscOverview || !window._gscOverview.totals) return;
         let slide = pptx.addSlide();
         slide.background = { color: THEME.bg };
         addHeaderFooter(slide, 'Search Console Performance');
@@ -424,7 +424,7 @@ window.PPT_EXPORT = (() => {
 
         try {
             // Instantiate PptxGenJS completely natively
-            let pptx = new pptxgen();
+            let pptx = new PptxGenJS();
             pptx.layout = 'LAYOUT_16x9';
 
             const state = modalState;
