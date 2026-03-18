@@ -6,12 +6,15 @@ const DASHBOARD = (() => {
 
     // ── State ─────────────────────────────────────────────────────────
     const state = {
-        property: null,       // { id, displayName, account }
-        gscSiteUrl: null,     // string e.g. "https://example.com/"
+        property: null,
+        gscSiteUrl: null,
         activeTab: 'llm',
         preset: '90d',
         startDate: null,
         endDate: null,
+        prevStartDate: null,
+        prevEndDate: null,
+        compareMode: false,
         datePickerInstance: null,
         loading: false,
         ga4Loaded: false,
@@ -40,8 +43,16 @@ const DASHBOARD = (() => {
         state.preset = preset;
         const { sd, ed } = presetToRange(preset);
         state.startDate = sd; state.endDate = ed;
+        // Auto-compute prev period
+        const s = new Date(sd), e = new Date(ed);
+        const days = Math.round((e - s) / 86400000) + 1;
+        const ps = new Date(s); ps.setDate(ps.getDate() - days);
+        const pe = new Date(s); pe.setDate(pe.getDate() - 1);
+        state.prevStartDate = ps.toISOString().slice(0, 10);
+        state.prevEndDate = pe.toISOString().slice(0, 10);
         document.querySelectorAll('.preset-btn').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
         if (state.datePickerInstance && preset !== 'custom') state.datePickerInstance.clear();
+        if (state.compareMode) updateCompareBadge();
     }
 
     // ── Toast ─────────────────────────────────────────────────────────
@@ -254,10 +265,35 @@ const DASHBOARD = (() => {
         switchTab('llm');
     }
 
+    // ── Compare Toggle ───────────────────────────────────────────────────
+    function toggleCompare() {
+        state.compareMode = !state.compareMode;
+        const btn = document.getElementById('compare-btn');
+        const badge = document.getElementById('compare-badge');
+        if (btn) btn.classList.toggle('active', state.compareMode);
+        if (state.compareMode) {
+            updateCompareBadge();
+        } else {
+            if (badge) badge.style.display = 'none';
+        }
+        // Reload current tab with new compare state
+        state.llmLoaded = false; state.ga4Loaded = false;
+        state.gscLoaded = false; state.blendedLoaded = false;
+        refreshActive();
+    }
+
+    function updateCompareBadge() {
+        const badge = document.getElementById('compare-badge');
+        if (!badge) return;
+        const fmt = d => { const dt = new Date(d); return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
+        badge.textContent = `vs ${fmt(state.prevStartDate)}–${fmt(state.prevEndDate)}`;
+        badge.style.display = 'inline-flex';
+    }
+
     // ── PDF/PPT Export ────────────────────────────────────────────────
     function exportPDF() {
         if (window.PPT_EXPORT) {
-            PPT_EXPORT.generateReport(state);
+            PPT_EXPORT.openModal();
         } else {
             toast('Preparing PDF…', 'info', 2000);
             setTimeout(() => window.print(), 300);
@@ -304,6 +340,9 @@ const DASHBOARD = (() => {
 
         // Refresh button
         document.getElementById('refresh-btn')?.addEventListener('click', () => { refreshActive(); });
+
+        // Compare button
+        document.getElementById('compare-btn')?.addEventListener('click', toggleCompare);
 
         // PDF button
         document.getElementById('pdf-btn')?.addEventListener('click', exportPDF);
@@ -408,8 +447,18 @@ const DASHBOARD = (() => {
     }
 
     function getState() { return state; }
+    function getCompareState() {
+        return {
+            compareMode: state.compareMode,
+            startDate: state.startDate,
+            endDate: state.endDate,
+            prevStartDate: state.prevStartDate,
+            prevEndDate: state.prevEndDate,
+            preset: state.preset
+        };
+    }
 
-    return { boot, refreshActive, applyPreset, toast, showPicker, switchTab, getState };
+    return { boot, refreshActive, applyPreset, toast, showPicker, switchTab, getState, getCompareState };
 
 })();
 

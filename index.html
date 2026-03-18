@@ -137,6 +137,11 @@
                     <div id="refresh-spinner" class="spinner" style="display:none"></div>
                     <span id="refresh-time">Ready</span>
                 </div>
+                <!-- Compare Toggle -->
+                <button id="compare-btn" class="btn btn-ghost btn-sm btn-compare" title="Toggle comparison period">
+                    ⇄ Compare
+                </button>
+                <span id="compare-badge" class="compare-badge" style="display:none"></span>
                 <button id="refresh-btn" class="btn btn-ghost btn-sm btn-refresh" title="Refresh all data">↻
                     Refresh</button>
                 <button id="pdf-btn" class="btn btn-ghost btn-sm btn-pdf" title="Export report as PowerPoint">⬇
@@ -644,6 +649,76 @@
     <script src="js/blended-tab.js"></script>
     <script src="js/ppt-export.js"></script>
     <script src="js/dashboard.js"></script>
+
+    <!-- PPT Report Modal -->
+    <div id="ppt-modal-overlay" class="ppt-modal-overlay" style="display:none" onclick="PPT_EXPORT.closeModal(event)">
+        <div class="ppt-modal" onclick="event.stopPropagation()">
+            <div class="ppt-modal__header">
+                <div class="ppt-modal__title">📊 Generate Performance Report</div>
+                <button class="ppt-modal__close" onclick="PPT_EXPORT.closeModal()">✕</button>
+            </div>
+
+            <div class="ppt-modal__body">
+                <!-- Client Name -->
+                <div class="ppt-field">
+                    <label class="ppt-label">Client / Property Name</label>
+                    <input type="text" id="ppt-client-name" class="ppt-input" placeholder="e.g. Acme Corp" />
+                </div>
+
+                <!-- Date Range -->
+                <div class="ppt-field">
+                    <label class="ppt-label">Date Range</label>
+                    <div class="ppt-preset-row">
+                        <button class="ppt-preset-btn" data-preset="7d">7d</button>
+                        <button class="ppt-preset-btn" data-preset="30d">30d</button>
+                        <button class="ppt-preset-btn ppt-active" data-preset="90d">90d</button>
+                        <button class="ppt-preset-btn" data-preset="6m">6m</button>
+                        <button class="ppt-preset-btn" data-preset="12m">12m</button>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+                        <input type="date" id="ppt-start-date" class="ppt-input" style="flex:1" />
+                        <span style="color:var(--t3)">→</span>
+                        <input type="date" id="ppt-end-date" class="ppt-input" style="flex:1" />
+                    </div>
+                </div>
+
+                <!-- Comparison Toggle -->
+                <div class="ppt-field">
+                    <label class="ppt-label">Compare to Previous Period</label>
+                    <div class="ppt-toggle-row">
+                        <label class="ppt-toggle">
+                            <input type="checkbox" id="ppt-compare-toggle" />
+                            <span class="ppt-toggle-track"></span>
+                        </label>
+                        <span id="ppt-compare-desc" style="font-size:12px;color:var(--t3)">Off — single period report</span>
+                    </div>
+                </div>
+
+                <!-- Report Mode -->
+                <div class="ppt-field">
+                    <label class="ppt-label">Report Mode</label>
+                    <div class="ppt-radio-group">
+                        <label class="ppt-radio-label">
+                            <input type="radio" name="ppt-mode" value="client" checked /> Client Report
+                            <span class="ppt-radio-hint">Positive framing, high-level</span>
+                        </label>
+                        <label class="ppt-radio-label">
+                            <input type="radio" name="ppt-mode" value="internal" /> Internal Report
+                            <span class="ppt-radio-hint">Full raw data, no spin</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ppt-modal__footer">
+                <button class="btn btn-ghost" onclick="PPT_EXPORT.closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="ppt-generate-btn" onclick="PPT_EXPORT.generate()">
+                    <span id="ppt-btn-text">▶ Generate PPT</span>
+                    <div id="ppt-btn-spinner" class="spinner" style="display:none"></div>
+                </button>
+            </div>
+        </div>
+    </div>
 
 </body>
 
