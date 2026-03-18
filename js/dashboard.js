@@ -269,12 +269,12 @@ const DASHBOARD = (() => {
     function toggleCompare() {
         state.compareMode = !state.compareMode;
         const btn = document.getElementById('compare-btn');
-        const badge = document.getElementById('compare-badge');
+        const controls = document.getElementById('compare-date-controls');
         if (btn) btn.classList.toggle('active', state.compareMode);
         if (state.compareMode) {
             updateCompareBadge();
         } else {
-            if (badge) badge.style.display = 'none';
+            if (controls) controls.style.display = 'none';
         }
         // Reload current tab with new compare state
         state.llmLoaded = false; state.ga4Loaded = false;
@@ -283,11 +283,11 @@ const DASHBOARD = (() => {
     }
 
     function updateCompareBadge() {
-        const badge = document.getElementById('compare-badge');
-        if (!badge) return;
-        const fmt = d => { const dt = new Date(d); return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
-        badge.textContent = `vs ${fmt(state.prevStartDate)}–${fmt(state.prevEndDate)}`;
-        badge.style.display = 'inline-flex';
+        const controls = document.getElementById('compare-date-controls');
+        if (!controls) return;
+        document.getElementById('dash-prev-start').value = state.prevStartDate;
+        document.getElementById('dash-prev-end').value = state.prevEndDate;
+        controls.style.display = 'flex';
     }
 
     // ── PDF/PPT Export ────────────────────────────────────────────────
@@ -341,8 +341,14 @@ const DASHBOARD = (() => {
         // Refresh button
         document.getElementById('refresh-btn')?.addEventListener('click', () => { refreshActive(); });
 
-        // Compare button
+        // Compare button & inputs
         document.getElementById('compare-btn')?.addEventListener('click', toggleCompare);
+        document.getElementById('dash-prev-start')?.addEventListener('change', e => {
+            if (e.target.value) { state.prevStartDate = e.target.value; refreshActive(); }
+        });
+        document.getElementById('dash-prev-end')?.addEventListener('change', e => {
+            if (e.target.value) { state.prevEndDate = e.target.value; refreshActive(); }
+        });
 
         // PDF button
         document.getElementById('pdf-btn')?.addEventListener('click', exportPDF);

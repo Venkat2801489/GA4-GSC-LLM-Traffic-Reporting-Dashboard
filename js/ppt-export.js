@@ -2,7 +2,7 @@
  * ppt-export.js — Comprehensive 15-Slide Professional Client Report Builder
  */
 
-const PPT_EXPORT = (() => {
+window.PPT_EXPORT = (() => {
     // ── Theme & Config ──────────────────────────────────────────
     const THEME = {
         bg: '0F172A',         // Navy Dark
@@ -21,6 +21,8 @@ const PPT_EXPORT = (() => {
         preset: '90d',
         startDate: '',
         endDate: '',
+        prevStartDate: '',
+        prevEndDate: '',
         compareMode: false,
         reportMode: 'client' // 'client' or 'internal'
     };
@@ -69,6 +71,8 @@ const PPT_EXPORT = (() => {
             modalState.preset = state.preset;
             modalState.startDate = state.startDate;
             modalState.endDate = state.endDate;
+            modalState.prevStartDate = state.prevStartDate;
+            modalState.prevEndDate = state.prevEndDate;
             modalState.compareMode = state.compareMode;
         }
         syncModalUI();
@@ -85,6 +89,14 @@ const PPT_EXPORT = (() => {
         document.getElementById('ppt-end-date').value = modalState.endDate || '';
         document.getElementById('ppt-compare-toggle').checked = modalState.compareMode;
         
+        const datesDiv = document.getElementById('ppt-compare-dates');
+        if (datesDiv) datesDiv.style.display = modalState.compareMode ? 'flex' : 'none';
+        
+        const sd = document.getElementById('ppt-prev-start-date');
+        const ed = document.getElementById('ppt-prev-end-date');
+        if (sd) sd.value = modalState.prevStartDate || '';
+        if (ed) ed.value = modalState.prevEndDate || '';
+        
         document.querySelectorAll('.ppt-preset-btn').forEach(b => {
             b.classList.toggle('ppt-active', b.dataset.preset === modalState.preset);
         });
@@ -99,7 +111,14 @@ const PPT_EXPORT = (() => {
         document.getElementById('ppt-client-name')?.addEventListener('input', e => modalState.clientName = e.target.value);
         document.getElementById('ppt-start-date')?.addEventListener('change', e => { modalState.startDate = e.target.value; modalState.preset = 'custom'; syncModalUI(); });
         document.getElementById('ppt-end-date')?.addEventListener('change', e => { modalState.endDate = e.target.value; modalState.preset = 'custom'; syncModalUI(); });
-        document.getElementById('ppt-compare-toggle')?.addEventListener('change', e => modalState.compareMode = e.target.checked);
+        
+        document.getElementById('ppt-compare-toggle')?.addEventListener('change', e => { 
+            modalState.compareMode = e.target.checked; 
+            syncModalUI(); 
+        });
+        
+        document.getElementById('ppt-prev-start-date')?.addEventListener('change', e => modalState.prevStartDate = e.target.value);
+        document.getElementById('ppt-prev-end-date')?.addEventListener('change', e => modalState.prevEndDate = e.target.value);
         
         document.querySelectorAll('.ppt-preset-btn').forEach(btn => {
             btn.addEventListener('click', e => {
@@ -108,6 +127,7 @@ const PPT_EXPORT = (() => {
                 if (window.DASHBOARD) DASHBOARD.applyPreset(p);
                 const s = DASHBOARD.getCompareState();
                 modalState.startDate = s.startDate; modalState.endDate = s.endDate;
+                modalState.prevStartDate = s.prevStartDate; modalState.prevEndDate = s.prevEndDate;
                 syncModalUI();
             });
         });
@@ -123,7 +143,8 @@ const PPT_EXPORT = (() => {
         slide.addText(title, { x: 0.5, y: 0.4, w: '90%', h: 0.5, color: THEME.textMain, fontSize: 24, bold: true });
         // Footer line
         slide.addShape(slide.ShapeType.rect, { x: 0.5, y: 0.95, w: 9, h: 0.02, fill: THEME.accent });
-        const footText = `${modalState.clientName || 'Client'} | ${modalState.startDate} to ${modalState.endDate} ${modalState.compareMode ? '(vs Prev)' : ''}`;
+        const cmpText = modalState.compareMode ? ` (vs ${modalState.prevStartDate} to ${modalState.prevEndDate})` : '';
+        const footText = `${modalState.clientName || 'Client'} | ${modalState.startDate} to ${modalState.endDate}${cmpText}`;
         slide.addText(footText, { x: 0.5, y: 1.0, w: 9, h: 0.3, color: THEME.textSub, fontSize: 10, align: 'right' });
     }
 
