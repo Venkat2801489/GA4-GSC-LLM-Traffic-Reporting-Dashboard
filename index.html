@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LLM + GA4 + GSC Traffic Dashboard</title>
+    <meta name="description"
+        content="Unified analytics dashboard: LLM referral traffic, GA4 channel analytics, and Google Search Console insights — all in one place." />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css" />
+
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+    <!-- Flatpickr -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+
+    <!-- Optional: configure your Client ID here instead of entering it in the UI -->
+    <!-- <script>window.LLM_DASH_CONFIG = { clientId: 'YOUR_CLIENT_ID.apps.googleusercontent.com' };</script> -->
+</head>
+
+<body>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 1 — PROPERTY PICKER
+     ════════════════════════════════════════════════════════════ -->
+    <div id="screen-picker" class="screen">
+        <div class="picker-card">
+            <!-- Logo -->
+            <div class="picker-logo">📡</div>
+            <h1 class="picker-title">Analytics Dashboard</h1>
+            <p class="picker-subtitle">Connect your Google account to view LLM traffic, GA4 channel insights, and Search
+                Console data in one unified view.</p>
+
+            <!-- Connect Step -->
+            <div id="connect-step">
+                <div class="client-id-row">
+                    <label for="client-id-input">Google OAuth Client ID <span style="color:var(--t3)">(optional — leave
+                            blank for demo)</span></label>
+                    <input id="client-id-input" type="text" class="input-field"
+                        placeholder="xxxxx.apps.googleusercontent.com" autocomplete="off" spellcheck="false" />
+                </div>
+
+                <!-- GSC optional input -->
+                <div class="picker-section-divider"></div>
+                <span class="picker-section-label">Google Search Console (Optional)</span>
+                <div class="client-id-row">
+                    <label for="gsc-url-input">GSC Site URL <span style="color:var(--t3)">(e.g.
+                            https://example.com/)</span></label>
+                    <input id="gsc-url-input" type="url" class="input-field" placeholder="https://yoursite.com/"
+                        autocomplete="off" />
+                </div>
+
+                <button id="picker-connect-btn" class="btn btn-primary" style="margin-top:20px">
+                    🔐 Connect with Google
+                </button>
+                <button id="demo-btn" class="btn btn-ghost" style="margin-top:10px;width:100%">
+                    👁️ Preview with Demo Data
+                </button>
+                <p class="picker-note">
+                    Your data stays in the browser. Read-only access. <br />
+                    <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">How to
+                        get a Client ID →</a>
+                </p>
+            </div>
+
+            <!-- Loading Step -->
+            <div id="loading-step" style="display:none;padding:20px 0;text-align:center">
+                <div class="spinner" style="width:32px;height:32px;border-width:3px;margin:0 auto 12px"></div>
+                <p style="color:var(--t2);font-size:13px">Connecting to Google…</p>
+            </div>
+
+            <!-- Properties Step -->
+            <div id="properties-step" style="display:none">
+                <p style="color:var(--t2);font-size:13px;margin-bottom:8px">Select a GA4 property:</p>
+                <div id="property-list-items" class="property-list"></div>
+                <p class="picker-back" id="picker-back-btn">← Back</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+     SCREEN 2 — DASHBOARD
+     ════════════════════════════════════════════════════════════ -->
+    <div id="screen-dashboard" class="screen">
+
+        <!-- ── Top Bar ── -->
+        <header class="topbar" id="main-topbar">
+            <div class="topbar__logo">
+                <div class="topbar__logo-icon">📡</div>
+                Analytics Hub
+            </div>
+
+            <div class="topbar__prop">
+                <div class="property-badge">
+                    <span class="property-badge__dot"></span>
+                    <span id="prop-name">Loading…</span>
+                </div>
+                <span id="gsc-badge"
+                    style="display:none;padding:4px 10px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);border-radius:99px;font-size:11px;color:var(--blue-l)">🔍
+                    GSC Connected</span>
+            </div>
+
+            <!-- Date Range -->
+            <div class="daterange-bar">
+                <button class="preset-btn" data-preset="7d">7d</button>
+                <button class="preset-btn" data-preset="30d">30d</button>
+                <button class="preset-btn active" data-preset="90d">90d</button>
+                <button class="preset-btn" data-preset="6m">6m</button>
+                <button class="preset-btn" data-preset="12m">12m</button>
+                <div class="preset-divider"></div>
+                <input type="text" id="custom-date-input" class="custom-date-input" placeholder="Custom range…"
+                    readonly />
+            </div>
+
+            <div class="topbar__controls">
+                <div class="refresh-label" id="refresh-label"
+                    style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t3)">
+                    <div id="refresh-spinner" class="spinner" style="display:none"></div>
+                    <span id="refresh-time">Ready</span>
+                </div>
+                <button id="refresh-btn" class="btn btn-ghost btn-sm btn-refresh" title="Refresh all data">↻
+                    Refresh</button>
+                <button id="pdf-btn" class="btn btn-ghost btn-sm btn-pdf" title="Export current tab as PDF">⬇
+                    PDF</button>
+                <button id="switch-property-btn" class="btn btn-ghost btn-sm">⚙ Property</button>
+            </div>
+        </header>
+
+        <!-- Demo Banner -->
+        <div id="demo-banner" class="demo-banner" style="display:none">
+            ⚡ Demo Mode — showing illustrative mock data. Connect a real Google account to see your actual analytics.
+        </div>
+
+        <!-- ── Main Tab Nav ── -->
+        <nav class="main-tab-nav" id="main-tab-nav" role="tablist">
+            <button class="main-tab-btn active" data-tab="llm" role="tab" aria-selected="true">
+                <span class="tab-icon">🤖</span> LLM Traffic
+            </button>
+            <button class="main-tab-btn" data-tab="ga4" role="tab" aria-selected="false">
+                <span class="tab-icon">📊</span> GA4 Analytics
+                <span class="tab-badge">4</span>
+            </button>
+            <button class="main-tab-btn" data-tab="gsc" role="tab" aria-selected="false">
+                <span class="tab-icon">🔍</span> Search Console
+                <span class="tab-badge">4</span>
+            </button>
+            <button class="main-tab-btn" data-tab="blended" role="tab" aria-selected="false">
+                <span class="tab-icon">🔗</span> Blended Insights
+            </button>
+        </nav>
+
+        <!-- ════════════════════════════════════════
+       TAB 1 — LLM TRAFFIC (existing)
+       ════════════════════════════════════ -->
+        <div class="tab-pane active" id="tab-llm" role="tabpanel">
+            <div class="sections-body--full" id="llm-content">
+
+                <!-- Refresh bar -->
+                <div class="refresh-bar">
+                    <div class="refresh-label" id="llm-refresh-label" style="display:flex;align-items:center;gap:6px">
+                        <span>LLM Referral Traffic — AI-sourced sessions from ChatGPT, Perplexity, Claude, Gemini &amp;
+                            more</span>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="kpi-row">
+                    <div class="kpi-card" id="kpi-llm-sessions"
+                        style="--kpi-accent:linear-gradient(90deg,#7c3aed,#a78bfa);--kpi-icon-bg:rgba(124,58,237,0.12)">
+                        <div class="kpi-card__icon">🤖</div>
+                        <div class="kpi-card__label">LLM Sessions</div>
+                        <div class="kpi-card__value">—</div>
+                        <div class="kpi-card__trend"></div>
+                        <div class="kpi-card__sparkline"><canvas id="sparkline-sessions"></canvas></div>
+                    </div>
+                    <div class="kpi-card" id="kpi-pct-traffic"
+                        style="--kpi-accent:linear-gradient(90deg,#10b981,#6ee7b7);--kpi-icon-bg:rgba(16,185,129,0.12)">
+                        <div class="kpi-card__icon">📈</div>
+                        <div class="kpi-card__label">% of All Traffic</div>
+                        <div class="kpi-card__value">—</div>
+                        <div class="kpi-card__trend"></div>
+                        <div class="kpi-card__sparkline"><canvas id="sparkline-pct"></canvas></div>
+                    </div>
+                    <div class="kpi-card" id="kpi-avg-engagement"
+                        style="--kpi-accent:linear-gradient(90deg,#f59e0b,#fcd34d);--kpi-icon-bg:rgba(245,158,11,0.12)">
+                        <div class="kpi-card__icon">⏱️</div>
+                        <div class="kpi-card__label">Avg Engagement Time</div>
+                        <div class="kpi-card__value">—</div>
+                        <div class="kpi-card__trend"></div>
+                        <div class="kpi-card__sparkline"><canvas id="sparkline-eng"></canvas></div>
+                    </div>
+                    <div class="kpi-card" id="kpi-bounce-rate"
+                        style="--kpi-accent:linear-gradient(90deg,#ef4444,#fca5a5);--kpi-icon-bg:rgba(239,68,68,0.10)">
+                        <div class="kpi-card__icon">↩️</div>
+                        <div class="kpi-card__label">Bounce Rate</div>
+                        <div class="kpi-card__value">—</div>
+                        <div class="kpi-card__trend"></div>
+                        <div class="kpi-card__sparkline"><canvas id="sparkline-bounce"></canvas></div>
+                    </div>
+                    <div class="kpi-card" id="kpi-llm-users"
+                        style="--kpi-accent:linear-gradient(90deg,#3b82f6,#93c5fd);--kpi-icon-bg:rgba(59,130,246,0.10)">
+                        <div class="kpi-card__icon">👥</div>
+                        <div class="kpi-card__label">LLM Unique Users</div>
+                        <div class="kpi-card__value">—</div>
+                        <div class="kpi-card__trend"></div>
+                        <div class="kpi-card__sparkline"><canvas id="sparkline-users"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Daily Area + Traffic Donut -->
+                <div class="grid-2-1">
+                    <div class="panel">
+                        <div class="panel__header">
+                            <div>
+                                <div class="panel__title">Daily LLM Sessions</div>
+                                <div class="panel__sub">LLM referral vs total sessions over time</div>
+                            </div>
+                            <div class="chart-tab-bar">
+                                <button class="chart-tab active" id="tab-sessions"
+                                    onclick="CHARTS.toggleDailyView('sessions')">Sessions</button>
+                                <button class="chart-tab" id="tab-users"
+                                    onclick="CHARTS.toggleDailyView('users')">Users</button>
+                            </div>
+                        </div>
+                        <div class="canvas-wrap" style="height:260px"><canvas id="chart-daily-llm"></canvas></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel__header">
+                            <div>
+                                <div class="panel__title">Traffic Sources</div>
+                                <div class="panel__sub">Share of sessions by channel</div>
+                            </div>
+                        </div>
+                        <div class="donut-wrap">
+                            <div class="donut-canvas-wrap"><canvas id="chart-traffic-donut"></canvas>
+                                <div class="donut-center" id="donut-center-traffic">
+                                    <div class="donut-center__val">—</div>
+                                    <div class="donut-center__lbl">sessions</div>
+                                </div>
+                            </div>
+                            <div class="donut-legend" id="donut-legend-traffic"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 3: LLM Sources + Breakdown Table -->
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel__header">
+                            <div>
+                                <div class="panel__title">LLM Sources</div>
+                                <div class="panel__sub">Sessions by AI tool</div>
+                            </div>
+                            <span class="panel__badge">🤖 AI Sources</span>
+                        </div>
+                        <div id="llm-source-bars" class="llm-source-list"></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel__header">
+                            <div>
+                                <div class="panel__title">Channel Breakdown</div>
+                                <div class="panel__sub">All channels vs LLM share</div>
+                            </div>
+                        </div>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Channel</th>
+                                        <th class="num">Sessions</th>
+                                        <th class="num">Eng. Rate</th>
+                                        <th class="num">Bounce</th>
+                                        <th class="num">Avg Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="source-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 4: WoW + MoM -->
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel__header">
+                            <div>
+                                <div class="panel__title">Week-over-Week</div>
+                                <div class="panel__sub">Current vs previous 7 days</div>
+                            </div>
+                        </div>
+                        <div class="canvas-wrap" style="height:200px"><canvas id="chart-wow"></canvas></div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel__header">
+                            <div>
+                                <div class="panel__title">Month-over-Month by Source</div>
+                                <div class="panel__sub">LLM session trends, last 6 months</div>
+                            </div>
+                        </div>
+                        <div class="canvas-wrap" style="height:200px"><canvas id="chart-mom"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Row 5: LLM vs Organic + Bounce Trend -->
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel__header">
+                            <div>
+                                <div class="panel__title">LLM vs Organic</div>
+                                <div class="panel__sub">Referral share comparison</div>
+                            </div>
+                        </div>
+                        <div class="donut-wrap">
+                            <div class="donut-canvas-wrap"><canvas id="chart-llm-vs-organic"></canvas>
+                                <div class="donut-center" id="donut-center-llm">
+                                    <div class="donut-center__val">—</div>
+                                    <div class="donut-center__lbl">LLM</div>
+                                </div>
+                            </div>
+                            <div class="donut-legend" id="donut-legend-llm"></div>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel__header">
+                            <div>
+                                <div class="panel__title">Bounce Rate Trend</div>
+                                <div class="panel__sub">LLM sessions — daily bounce rate</div>
+                            </div>
+                        </div>
+                        <div class="canvas-wrap" style="height:200px"><canvas id="chart-bounce-trend"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Row 6: Landing Pages + Engagement Quality -->
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel__header">
+                            <div>
+                                <div class="panel__title">Top Landing Pages</div>
+                                <div class="panel__sub">Pages receiving most LLM traffic</div>
+                            </div>
+                        </div>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Page Path</th>
+                                        <th class="num">Sessions</th>
+                                        <th class="num">Avg Duration</th>
+                                        <th class="num">Eng. Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="landing-pages-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel__header">
+                            <div>
+                                <div class="panel__title">Engagement Quality</div>
+                                <div class="panel__sub">Engagement rate by source</div>
+                            </div>
+                        </div>
+                        <div id="eq-grid-container" class="eq-grid"></div>
+                    </div>
+                </div>
+
+            </div><!-- /sections-body--full -->
+        </div><!-- /tab-pane#tab-llm -->
+
+        <!-- ════════════════════════════════════════
+       TAB 2 — GA4 ANALYTICS
+       ════════════════════════════════════ -->
+        <div class="tab-pane" id="tab-ga4" role="tabpanel">
+            <div class="tab-body">
+
+                <!-- Sticky Section Nav -->
+                <nav class="section-nav" id="ga4-section-nav">
+                    <div class="section-nav__label">GA4 Sections</div>
+                    <a class="section-nav__item active" href="#ga4-s1"><span class="nav-num">1</span> Traffic
+                        Acquisition</a>
+                    <a class="section-nav__item" href="#ga4-s2"><span class="nav-num">2</span> Top Pages</a>
+                    <a class="section-nav__item" href="#ga4-s3"><span class="nav-num">3</span> Conversions</a>
+                    <a class="section-nav__item" href="#ga4-s4"><span class="nav-num">4</span> Audience &amp;
+                        Devices</a>
+                </nav>
+
+                <div class="sections-body" id="ga4-sections">
+
+                    <!-- S1: Traffic Acquisition -->
+                    <div id="ga4-s1" class="section-panel">
+                        <div class="section-panel__header">
+                            <div class="section-panel__title">
+                                <div class="section-panel__icon" style="background:rgba(99,102,241,0.12)">📊</div>
+                                Traffic Acquisition
+                            </div>
+                            <span style="font-size:12px;color:var(--t3)">Sessions by channel group</span>
+                        </div>
+                        <div class="section-panel__body" id="ga4-s1-body">
+                            <div class="skeleton-wrap">
+                                <div class="skeleton-row">
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                </div>
+                                <div class="skeleton sk-table"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- S2: Top Pages -->
+                    <div id="ga4-s2" class="section-panel">
+                        <div class="section-panel__header">
+                            <div class="section-panel__title">
+                                <div class="section-panel__icon" style="background:rgba(16,185,129,0.12)">📄</div>
+                                Top Pages &amp; Engagement
+                            </div>
+                            <span style="font-size:12px;color:var(--t3)">Top 25 pages by sessions — sortable</span>
+                        </div>
+                        <div class="section-panel__body" id="ga4-s2-body">
+                            <div class="skeleton-wrap">
+                                <div class="skeleton sk-table"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- S3: Conversions -->
+                    <div id="ga4-s3" class="section-panel">
+                        <div class="section-panel__header">
+                            <div class="section-panel__title">
+                                <div class="section-panel__icon" style="background:rgba(124,58,237,0.12)">🎯</div>
+                                Conversions &amp; Key Events
+                            </div>
+                            <span style="font-size:12px;color:var(--t3)">GA4 key events configured in your
+                                property</span>
+                        </div>
+                        <div class="section-panel__body" id="ga4-s3-body">
+                            <div class="skeleton-wrap">
+                                <div class="skeleton-row" style="grid-template-columns:1fr 1fr 1fr">
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                </div>
+                                <div class="skeleton sk-table"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- S4: Audience -->
+                    <div id="ga4-s4" class="section-panel">
+                        <div class="section-panel__header">
+                            <div class="section-panel__title">
+                                <div class="section-panel__icon" style="background:rgba(245,158,11,0.12)">👥</div>
+                                Audience &amp; Devices
+                            </div>
+                            <span style="font-size:12px;color:var(--t3)">Device, country and browser breakdown</span>
+                        </div>
+                        <div class="section-panel__body" id="ga4-s4-body">
+                            <div class="skeleton-wrap">
+                                <div class="skeleton-row" style="grid-template-columns:1fr 1fr 1fr">
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                </div>
+                                <div class="skeleton sk-table"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /sections-body -->
+            </div><!-- /tab-body -->
+        </div><!-- /tab-pane#tab-ga4 -->
+
+        <!-- ════════════════════════════════════════
+       TAB 3 — SEARCH CONSOLE
+       ════════════════════════════════════ -->
+        <div class="tab-pane" id="tab-gsc" role="tabpanel">
+            <div class="tab-body">
+
+                <!-- Sticky Section Nav -->
+                <nav class="section-nav" id="gsc-section-nav">
+                    <div class="section-nav__label">GSC Sections</div>
+                    <a class="section-nav__item active" href="#gsc-s5"><span class="nav-num">5</span> Search
+                        Overview</a>
+                    <a class="section-nav__item" href="#gsc-s6"><span class="nav-num">6</span> Query Intelligence</a>
+                    <a class="section-nav__item" href="#gsc-s7"><span class="nav-num">7</span> Page Performance</a>
+                    <a class="section-nav__item" href="#gsc-s8"><span class="nav-num">8</span> Devices &amp;
+                        Countries</a>
+                </nav>
+
+                <div class="sections-body" id="gsc-sections">
+
+                    <!-- No GSC banner (will show if no siteUrl) -->
+                    <div id="gsc-no-url-banner" style="display:none" class="section-panel">
+                        <div class="section-panel__body" style="text-align:center;padding:48px">
+                            <div style="font-size:40px;margin-bottom:12px">🔍</div>
+                            <div style="font-size:16px;font-weight:600;color:var(--t1);margin-bottom:8px">No GSC Site
+                                URL Configured</div>
+                            <div style="font-size:13px;color:var(--t3);max-width:380px;margin:0 auto 16px">
+                                Return to the property picker and enter your Google Search Console site URL (e.g.
+                                <code>https://example.com/</code>) to enable this tab.
+                            </div>
+                            <button class="btn btn-ghost btn-sm" onclick="DASHBOARD.showPicker()">← Property
+                                Picker</button>
+                        </div>
+                    </div>
+
+                    <!-- S5: Search Overview -->
+                    <div id="gsc-s5" class="section-panel">
+                        <div class="section-panel__header">
+                            <div class="section-panel__title">
+                                <div class="section-panel__icon" style="background:rgba(59,130,246,0.12)">🔍</div>
+                                Search Performance Overview
+                            </div>
+                            <span style="font-size:12px;color:var(--t3)">Clicks, impressions, CTR and position</span>
+                        </div>
+                        <div class="section-panel__body" id="gsc-s5-body">
+                            <div class="skeleton-wrap">
+                                <div class="skeleton-row">
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                </div>
+                                <div class="skeleton sk-chart"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- S6: Query Intelligence -->
+                    <div id="gsc-s6" class="section-panel">
+                        <div class="section-panel__header">
+                            <div class="section-panel__title">
+                                <div class="section-panel__icon" style="background:rgba(124,58,237,0.12)">🧠</div>
+                                Query Intelligence
+                            </div>
+                            <span style="font-size:12px;color:var(--t3)">Top queries, CTR opportunities, ranking
+                                opportunities</span>
+                        </div>
+                        <div class="section-panel__body" id="gsc-s6-body">
+                            <div class="skeleton-wrap">
+                                <div class="skeleton sk-table"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- S7: Page Performance -->
+                    <div id="gsc-s7" class="section-panel">
+                        <div class="section-panel__header">
+                            <div class="section-panel__title">
+                                <div class="section-panel__icon" style="background:rgba(245,158,11,0.12)">📄</div>
+                                Page Performance
+                            </div>
+                            <span style="font-size:12px;color:var(--t3)">Top pages by clicks — leak detection</span>
+                        </div>
+                        <div class="section-panel__body" id="gsc-s7-body">
+                            <div class="skeleton-wrap">
+                                <div class="skeleton sk-table"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- S8: Devices & Countries -->
+                    <div id="gsc-s8" class="section-panel">
+                        <div class="section-panel__header">
+                            <div class="section-panel__title">
+                                <div class="section-panel__icon" style="background:rgba(16,185,129,0.12)">🌍</div>
+                                Devices &amp; Countries
+                            </div>
+                            <span style="font-size:12px;color:var(--t3)">GSC performance split by device and
+                                country</span>
+                        </div>
+                        <div class="section-panel__body" id="gsc-s8-body">
+                            <div class="skeleton-wrap">
+                                <div class="skeleton sk-table"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /sections-body -->
+            </div><!-- /tab-body -->
+        </div><!-- /tab-pane#tab-gsc -->
+
+        <!-- ════════════════════════════════════════
+       TAB 4 — BLENDED INSIGHTS
+       ════════════════════════════════════ -->
+        <div class="tab-pane" id="tab-blended" role="tabpanel">
+            <div class="tab-body">
+                <div class="sections-body" style="max-width:1200px;margin:0 auto">
+                    <div id="blended-panel" class="section-panel">
+                        <div class="section-panel__header">
+                            <div class="section-panel__title">
+                                <div class="section-panel__icon" style="background:rgba(124,58,237,0.15)">🔗</div>
+                                Blended Insights
+                            </div>
+                            <span style="font-size:12px;color:var(--t3)">GA4 + GSC cross-platform metrics</span>
+                        </div>
+                        <div class="section-panel__body" id="blended-body">
+                            <div class="skeleton-wrap">
+                                <div class="skeleton-row">
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                    <div class="skeleton sk-h2"></div>
+                                </div>
+                                <div class="skeleton sk-table"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /screen-dashboard -->
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/ga4-api.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/ga4-tab.js"></script>
+    <script src="js/gsc-tab.js"></script>
+    <script src="js/blended-tab.js"></script>
+    <script src="js/dashboard.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,39 @@
+{
+    "meta": {
+        "brand_name": "Antigravity (Updated from Images)",
+        "description": "Core design tokens extracted from brand assets."
+    },
+    "colors": {
+        "primary": {
+            "DEFAULT": "#37e813",
+            "foreground": "#0e003f"
+        },
+        "secondary": {
+            "DEFAULT": "#0e003f",
+            "foreground": "#ffffff"
+        },
+        "background": "#ffffff",
+        "foreground": "#0e003f",
+        "muted": "#f4f4f5",
+        "accent": "#37e813",
+        "destructive": "#EF4444",
+        "success": "#37e813"
+    },
+    "typography": {
+        "font_family_headings": [
+            "Poppins",
+            "sans-serif"
+        ],
+        "font_family_body": [
+            "Poppins",
+            "sans-serif"
+        ],
+        "font_weight_bold": "700",
+        "font_weight_normal": "400"
+    },
+    "ui": {
+        "border_radius_default": "0.5rem",
+        "border_radius_small": "0.25rem",
+        "spacing_base_unit": "4px"
+    }
+}
