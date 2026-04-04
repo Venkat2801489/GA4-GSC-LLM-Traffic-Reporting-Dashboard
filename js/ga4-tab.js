@@ -51,13 +51,13 @@ const GA4_TAB = (() => {
     //  SECTION 1 — Traffic Acquisition
     // ════════════════════════════════════════════════════════════
 
-    async function loadTrafficAcquisition(propId, sd, ed) {
+    async function loadTrafficAcquisition(propId, sd, ed, psd = null, ped = null) {
         showSkeleton('ga4-s1-body');
         try {
-            const data = await GA4_API.fetchTrafficAcquisition(propId, sd, ed);
+            const data = await GA4_API.fetchTrafficAcquisition(propId, sd, ed, psd, ped);
             renderTrafficAcquisition(data);
         } catch (e) {
-            showError('ga4-s1-body', e.message || 'Failed to load Traffic Acquisition', () => loadTrafficAcquisition(propId, sd, ed));
+            showError('ga4-s1-body', e.message || 'Failed to load Traffic Acquisition', () => loadTrafficAcquisition(propId, sd, ed, psd, ped));
         }
     }
 
@@ -356,7 +356,6 @@ const GA4_TAB = (() => {
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <div class="panel__title" style="font-size:13px">Top Countries</div>
-            <button class="btn btn-ghost btn-sm" onclick="GA4_TAB._exportCountries()">⬇ CSV</button>
           </div>
           <div class="data-table-wrap">
             <table class="data-table" id="ga4-country-table">
@@ -368,7 +367,6 @@ const GA4_TAB = (() => {
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <div class="panel__title" style="font-size:13px">Top Browsers</div>
-            <button class="btn btn-ghost btn-sm" onclick="GA4_TAB._exportBrowsers()">⬇ CSV</button>
           </div>
           <div class="data-table-wrap">
             <table class="data-table" id="ga4-browser-table">
@@ -381,20 +379,11 @@ const GA4_TAB = (() => {
         window._ga4Countries = countries; window._ga4Browsers = browsers; window._ga4TotalSess = totalSess;
     }
 
-    function _exportCountries() {
-        const rows = window._ga4Countries || [], t = window._ga4TotalSess || 1;
-        exportCSV(rows.map(r => [r.country, r.sessions, r.newUsers, ((r.sessions / t) * 100).toFixed(1) + '%']), ['Country', 'Sessions', 'New Users', '% of Total'], 'audience-countries.csv');
-    }
-    function _exportBrowsers() {
-        const rows = window._ga4Browsers || [];
-        const t = rows.reduce((s, r) => s + r.sessions, 0) || 1;
-        exportCSV(rows.map(r => [r.browser, r.sessions, ((r.sessions / t) * 100).toFixed(1) + '%']), ['Browser', 'Sessions', '% of Total'], 'audience-browsers.csv');
-    }
 
     // ── Load All ─────────────────────────────────────────────────
 
-    function loadAll(propId, sd, ed) {
-        loadTrafficAcquisition(propId, sd, ed);
+    function loadAll(propId, sd, ed, psd = null, ped = null) {
+        loadTrafficAcquisition(propId, sd, ed, psd, ped);
         loadTopPages(propId, sd, ed);
         loadConversions(propId, sd, ed);
         loadAudience(propId, sd, ed);
@@ -403,6 +392,6 @@ const GA4_TAB = (() => {
     return {
         loadAll, loadTrafficAcquisition, loadTopPages, loadConversions, loadAudience,
         _sortPages, _filterPages, _exportChannelTable, _exportPagesTable,
-        _exportConvByName, _exportConvByChannel, _exportCountries, _exportBrowsers
+        _exportConvByName, _exportConvByChannel
     };
 })();

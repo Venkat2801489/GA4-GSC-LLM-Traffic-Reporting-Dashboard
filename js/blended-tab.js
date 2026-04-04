@@ -34,11 +34,11 @@ const BLENDED_TAB = (() => {
         a.download = filename; a.click(); URL.revokeObjectURL(a.href);
     }
 
-    async function loadAll(propId, siteUrl, sd, ed) {
+    async function loadAll(propId, siteUrl, sd, ed, psd = null, ped = null) {
         showSkeleton('blended-body');
         try {
             const [acqData, gscPagesData, gscOvData, ga4LandingData] = await Promise.all([
-                GA4_API.fetchTrafficAcquisition(propId, sd, ed),
+                GA4_API.fetchTrafficAcquisition(propId, sd, ed, psd, ped),
                 GA4_API.fetchGSCPages(siteUrl, sd, ed),
                 GA4_API.fetchGSCOverview(siteUrl, sd, ed),
                 GA4_API.fetchTopLandingPages(propId, sd, ed)

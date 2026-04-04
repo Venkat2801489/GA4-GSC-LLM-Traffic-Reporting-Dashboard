@@ -180,9 +180,9 @@ const GA4_API = (() => {
   //  LLM TAB — Methods
   // ════════════════════════════════════════════════════════════
 
-  async function fetchKPIs(propId, sd, ed) {
+  async function fetchKPIs(propId, sd, ed, psd = null, ped = null) {
     if (_isMock) return _mockKPIs();
-    const prev = _prevPeriod(sd, ed);
+    const prev = (psd && ped) ? { sd: psd, ed: ped } : _prevPeriod(sd, ed);
     const [llm, all, prevLlm, prevAll] = await Promise.all([
       runReport(propId, { dateRanges: [dr(sd, ed)], metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'averageSessionDuration' }, { name: 'bounceRate' }, { name: 'engagementRate' }], dimensionFilter: llmFilter() }),
       runReport(propId, { dateRanges: [dr(sd, ed)], metrics: [{ name: 'sessions' }, { name: 'totalUsers' }] }),
@@ -222,9 +222,9 @@ const GA4_API = (() => {
     return runReport(propId, { dateRanges: [dr(sd, ed)], dimensions: [{ name: 'sessionSource' }], metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'averageSessionDuration' }, { name: 'bounceRate' }, { name: 'engagementRate' }], dimensionFilter: llmFilter(), orderBys: [{ metric: { metricName: 'sessions' }, desc: true }], limit: 15 });
   }
 
-  async function fetchWoW(propId, sd, ed) {
+  async function fetchWoW(propId, sd, ed, psd = null, ped = null) {
     if (_isMock) return _mockWoW(sd, ed);
-    const prev = _prevPeriod(sd, ed);
+    const prev = (psd && ped) ? { sd: psd, ed: ped } : _prevPeriod(sd, ed);
     const [curr, prev_] = await Promise.all([fetchDailyLLMSessions(propId, sd, ed), fetchDailyLLMSessions(propId, prev.sd, prev.ed)]);
     return { current: curr, previous: prev_ };
   }
@@ -260,9 +260,9 @@ const GA4_API = (() => {
   //  GA4 TAB — Methods (non-LLM traffic)
   // ════════════════════════════════════════════════════════════
 
-  async function fetchTrafficAcquisition(propId, sd, ed) {
+  async function fetchTrafficAcquisition(propId, sd, ed, psd = null, ped = null) {
     if (_isMock) return _mockTrafficAcquisition();
-    const prev = _prevPeriod(sd, ed);
+    const prev = (psd && ped) ? { sd: psd, ed: ped } : _prevPeriod(sd, ed);
     const [curr, prevData] = await Promise.all([
       runReport(propId, {
         dateRanges: [dr(sd, ed)],
@@ -387,8 +387,8 @@ const GA4_API = (() => {
 
   async function fetchGSCQueries(siteUrl, sd, ed) {
     if (_isMock) return _mockGSCQueries();
-    const raw = await _gscPost(siteUrl, { startDate: sd, endDate: ed, dimensions: ['query'], searchType: 'web', rowLimit: 500 });
-    const rows = _parseGSC(raw).map(r => ({ query: r.key0, ...r }));
+    const raw = await _gscPost(siteUrl, { startDate: sd, endDate: ed, dimensions: ['query', 'page'], searchType: 'web', rowLimit: 500 });
+    const rows = _parseGSC(raw).map(r => ({ query: r.key0, page: r.key1, ...r }));
     rows.sort((a, b) => b.clicks - a.clicks);
     const top50 = rows.slice(0, 50);
     const ctrOpps = rows.filter(r => r.impressions > 500 && r.ctr < 0.02);
@@ -659,26 +659,26 @@ const GA4_API = (() => {
 
   function _mockGSCQueries() {
     const allQueries = [
-      { query: 'chatgpt vs claude', clicks: 842, impressions: 12400, ctr: 0.068, position: 2.1 },
-      { query: 'best ai tools 2025', clicks: 724, impressions: 18600, ctr: 0.039, position: 4.2 },
-      { query: 'perplexity ai review', clicks: 618, impressions: 8900, ctr: 0.069, position: 1.8 },
-      { query: 'llm seo strategy', clicks: 542, impressions: 7200, ctr: 0.075, position: 2.4 },
-      { query: 'ai writing tools', clicks: 498, impressions: 22000, ctr: 0.023, position: 6.8 },
-      { query: 'chatgpt prompts for seo', clicks: 412, impressions: 9800, ctr: 0.042, position: 3.6 },
-      { query: 'google gemini vs chatgpt', clicks: 388, impressions: 14200, ctr: 0.027, position: 5.1 },
-      { query: 'how to use claude ai', clicks: 356, impressions: 6400, ctr: 0.056, position: 3.2 },
-      { query: 'ai seo tools free', clicks: 312, impressions: 16800, ctr: 0.019, position: 7.4 },
-      { query: 'perplexity vs chatgpt', clicks: 298, impressions: 5600, ctr: 0.053, position: 2.9 },
-      { query: 'ai content strategy', clicks: 276, impressions: 9200, ctr: 0.030, position: 8.1 },
-      { query: 'best llm models 2025', clicks: 254, impressions: 7800, ctr: 0.033, position: 4.7 },
-      { query: 'copilot microsoft review', clicks: 232, impressions: 4200, ctr: 0.055, position: 3.4 },
-      { query: 'ai traffic analytics', clicks: 218, impressions: 3800, ctr: 0.057, position: 2.6 },
-      { query: 'google analytics 4 guide', clicks: 196, impressions: 11400, ctr: 0.017, position: 9.2 },
-      { query: 'free ai prompt templates', clicks: 184, impressions: 8600, ctr: 0.021, position: 8.8 },
-      { query: 'seo with ai tools', clicks: 172, impressions: 12600, ctr: 0.014, position: 11.3 },
-      { query: 'organic traffic growth tips', clicks: 156, impressions: 9100, ctr: 0.017, position: 10.4 },
-      { query: 'improve website ctr', clicks: 144, impressions: 7400, ctr: 0.019, position: 9.7 },
-      { query: 'chatgpt website traffic', clicks: 138, impressions: 5200, ctr: 0.027, position: 6.3 }
+      { query: 'chatgpt vs claude', page: 'https://example.com/blog/chatgpt-vs-claude', clicks: 842, impressions: 12400, ctr: 0.068, position: 2.1 },
+      { query: 'best ai tools 2025', page: 'https://example.com/blog/ai-tools-comparison', clicks: 724, impressions: 18600, ctr: 0.039, position: 4.2 },
+      { query: 'perplexity ai review', page: 'https://example.com/blog/perplexity-review', clicks: 618, impressions: 8900, ctr: 0.069, position: 1.8 },
+      { query: 'llm seo strategy', page: 'https://example.com/blog/llm-seo-strategy', clicks: 542, impressions: 7200, ctr: 0.075, position: 2.4 },
+      { query: 'ai writing tools', page: 'https://example.com/blog/ai-tools-comparison', clicks: 498, impressions: 22000, ctr: 0.023, position: 6.8 },
+      { query: 'chatgpt prompts for seo', page: 'https://example.com/blog/ai-prompting-guide', clicks: 412, impressions: 9800, ctr: 0.042, position: 3.6 },
+      { query: 'google gemini vs chatgpt', page: 'https://example.com/blog/gemini-vs-chatgpt', clicks: 388, impressions: 14200, ctr: 0.027, position: 5.1 },
+      { query: 'how to use claude ai', page: 'https://example.com/blog/chatgpt-vs-claude', clicks: 356, impressions: 6400, ctr: 0.056, position: 3.2 },
+      { query: 'ai seo tools free', page: 'https://example.com/tools/ai-calculator', clicks: 312, impressions: 16800, ctr: 0.019, position: 7.4 },
+      { query: 'perplexity vs chatgpt', page: 'https://example.com/blog/perplexity-review', clicks: 298, impressions: 5600, ctr: 0.053, position: 2.9 },
+      { query: 'ai content strategy', page: 'https://example.com/blog/llm-seo-strategy', clicks: 276, impressions: 9200, ctr: 0.030, position: 8.1 },
+      { query: 'best llm models 2025', page: 'https://example.com/blog/ai-tools-comparison', clicks: 254, impressions: 7800, ctr: 0.033, position: 4.7 },
+      { query: 'copilot microsoft review', page: 'https://example.com/blog/ai-tools-comparison', clicks: 232, impressions: 4200, ctr: 0.055, position: 3.4 },
+      { query: 'ai traffic analytics', page: 'https://example.com/tools/ai-calculator', clicks: 218, impressions: 3800, ctr: 0.057, position: 2.6 },
+      { query: 'google analytics 4 guide', page: 'https://example.com/blog/llm-seo-strategy', clicks: 196, impressions: 11400, ctr: 0.017, position: 9.2 },
+      { query: 'free ai prompt templates', page: 'https://example.com/resources/prompt-library', clicks: 184, impressions: 8600, ctr: 0.021, position: 8.8 },
+      { query: 'seo with ai tools', page: 'https://example.com/blog/llm-seo-strategy', clicks: 172, impressions: 12600, ctr: 0.014, position: 11.3 },
+      { query: 'organic traffic growth tips', page: 'https://example.com/blog/llm-seo-strategy', clicks: 156, impressions: 9100, ctr: 0.017, position: 10.4 },
+      { query: 'improve website ctr', page: 'https://example.com/blog/llm-seo-strategy', clicks: 144, impressions: 7400, ctr: 0.019, position: 9.7 },
+      { query: 'chatgpt website traffic', page: 'https://example.com/blog/chatgpt-vs-claude', clicks: 138, impressions: 5200, ctr: 0.027, position: 6.3 }
     ];
     return {
       top50: allQueries.slice(0, 20),

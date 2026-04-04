@@ -199,35 +199,43 @@ const GSC_TAB = (() => {
 
         let content = '';
         if (_activeQueryTab === 'top50') {
-            const rows = (_gscQueryData.top50 || []).map(r => `<tr>
+            const rows = (_gscQueryData.top50 || []).map(r => {
+                let path = r.page || ''; try { path = new URL(r.page).pathname; } catch { }
+                return `<tr>
         <td>${r.query}</td>
+        <td><span class="url-cell" title="${r.page}">${path.length > 50 ? path.slice(0, 47) + '…' : path}</span></td>
         <td class="num">${fNum(r.clicks)}</td>
         <td class="num">${fNum(r.impressions)}</td>
         <td class="num"><span class="eng-badge ${ctrColor(r.ctr)}">${fPct(r.ctr)}</span></td>
         <td class="num"><span class="eng-badge ${posColor(r.position)}">${fPos(r.position)}</span></td>
-      </tr>`).join('');
+      </tr>`}).join('');
             content = `<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="btn btn-ghost btn-sm" onclick="GSC_TAB._exportTop50()">⬇ CSV</button></div>
         <div class="data-table-wrap"><table class="data-table">
-          <thead><tr><th>Query</th><th class="num">Clicks</th><th class="num">Impressions</th><th class="num">CTR</th><th class="num">Avg Position</th></tr></thead>
+          <thead><tr><th>Query</th><th>Page URL</th><th class="num">Clicks</th><th class="num">Impressions</th><th class="num">CTR</th><th class="num">Avg Position</th></tr></thead>
           <tbody>${rows}</tbody>
         </table></div>`;
+
         } else if (_activeQueryTab === 'ctrOpps') {
             const data = _gscQueryData.ctrOpps || [];
             const hint = `<div class="insight-banner insight-yellow">💡 These pages rank well but aren't getting clicks — consider rewriting title tags and meta descriptions.</div>`;
             if (!data.length) {
                 content = hint + `<div class="empty-state"><div class="empty-state__icon">✅</div><div class="empty-state__title">No CTR opportunities found</div><div class="empty-state__msg">All high-impression queries have a CTR above 2%.</div></div>`;
             } else {
-                const rows = data.map(r => `<tr>
+                const rows = data.map(r => {
+                let path = r.page || ''; try { path = new URL(r.page).pathname; } catch { }
+                return `<tr>
           <td>${r.query}</td>
+          <td><span class="url-cell" title="${r.page}">${path.length > 50 ? path.slice(0, 47) + '…' : path}</span></td>
           <td class="num">${fNum(r.impressions)}</td>
           <td class="num"><span class="eng-badge ${ctrColor(r.ctr)}">${fPct(r.ctr)}</span></td>
           <td class="num"><span class="eng-badge ${posColor(r.position)}">${fPos(r.position)}</span></td>
-        </tr>`).join('');
+        </tr>`}).join('');
                 content = hint + `<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="btn btn-ghost btn-sm" onclick="GSC_TAB._exportCtrOpps()">⬇ CSV</button></div>
           <div class="data-table-wrap"><table class="data-table">
-            <thead><tr><th>Query</th><th class="num">Impressions</th><th class="num">CTR</th><th class="num">Position</th></tr></thead>
+            <thead><tr><th>Query</th><th>Page URL</th><th class="num">Impressions</th><th class="num">CTR</th><th class="num">Position</th></tr></thead>
             <tbody>${rows}</tbody>
           </table></div>`;
+
             }
         } else {
             const data = _gscQueryData.rankOpps || [];
@@ -235,17 +243,21 @@ const GSC_TAB = (() => {
             if (!data.length) {
                 content = hint + `<div class="empty-state"><div class="empty-state__icon">✅</div><div class="empty-state__title">No ranking opportunities found</div><div class="empty-state__msg">No queries currently ranking in positions 4–10.</div></div>`;
             } else {
-                const rows = data.sort((a, b) => a.position - b.position).map(r => `<tr>
+                const rows = data.sort((a, b) => a.position - b.position).map(r => {
+                let path = r.page || ''; try { path = new URL(r.page).pathname; } catch { }
+                return `<tr>
           <td>${r.query}</td>
+          <td><span class="url-cell" title="${r.page}">${path.length > 50 ? path.slice(0, 47) + '…' : path}</span></td>
           <td class="num">${fNum(r.clicks)}</td>
           <td class="num">${fNum(r.impressions)}</td>
           <td class="num"><span class="eng-badge ${posColor(r.position)}">${fPos(r.position)}</span></td>
-        </tr>`).join('');
+        </tr>`}).join('');
                 content = hint + `<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="btn btn-ghost btn-sm" onclick="GSC_TAB._exportRankOpps()">⬇ CSV</button></div>
           <div class="data-table-wrap"><table class="data-table">
-            <thead><tr><th>Query</th><th class="num">Clicks</th><th class="num">Impressions</th><th class="num">Position</th></tr></thead>
+            <thead><tr><th>Query</th><th>Page URL</th><th class="num">Clicks</th><th class="num">Impressions</th><th class="num">Position</th></tr></thead>
             <tbody>${rows}</tbody>
           </table></div>`;
+
             }
         }
 
@@ -255,14 +267,15 @@ const GSC_TAB = (() => {
     function _switchQueryTab(key) { _activeQueryTab = key; renderQueryIntelligence(); }
     function _exportTop50() {
         const rows = (_gscQueryData?.top50 || []);
-        exportCSV(rows.map(r => [r.query, r.clicks, r.impressions, fPct(r.ctr), fPos(r.position)]), ['Query', 'Clicks', 'Impressions', 'CTR', 'Avg Position'], 'top-queries.csv');
+        exportCSV(rows.map(r => [r.query, r.page || '', r.clicks, r.impressions, fPct(r.ctr), fPos(r.position)]), ['Query', 'Page URL', 'Clicks', 'Impressions', 'CTR', 'Avg Position'], 'top-queries.csv');
     }
     function _exportCtrOpps() {
-        exportCSV((_gscQueryData?.ctrOpps || []).map(r => [r.query, r.impressions, fPct(r.ctr), fPos(r.position)]), ['Query', 'Impressions', 'CTR', 'Position'], 'ctr-opportunities.csv');
+        exportCSV((_gscQueryData?.ctrOpps || []).map(r => [r.query, r.page || '', r.impressions, fPct(r.ctr), fPos(r.position)]), ['Query', 'Page URL', 'Impressions', 'CTR', 'Position'], 'ctr-opportunities.csv');
     }
     function _exportRankOpps() {
-        exportCSV((_gscQueryData?.rankOpps || []).map(r => [r.query, r.clicks, r.impressions, fPos(r.position)]), ['Query', 'Clicks', 'Impressions', 'Position'], 'ranking-opportunities.csv');
+        exportCSV((_gscQueryData?.rankOpps || []).map(r => [r.query, r.page || '', r.clicks, r.impressions, fPos(r.position)]), ['Query', 'Page URL', 'Clicks', 'Impressions', 'Position'], 'ranking-opportunities.csv');
     }
+
 
     // ════════════════════════════════════════════════════════════
     //  SECTION 7 — Page Performance
@@ -371,7 +384,6 @@ const GSC_TAB = (() => {
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <div class="panel__title" style="font-size:13px">By Device</div>
-            <button class="btn btn-ghost btn-sm" onclick="GSC_TAB._exportDevices()">⬇ CSV</button>
           </div>
           <div class="insight-banner insight-yellow" style="margin-bottom:8px">📱 If mobile CTR is significantly lower than desktop, your mobile titles/descriptions need optimization.</div>
           <div class="data-table-wrap"><table class="data-table" id="gsc-device-table">
@@ -382,7 +394,6 @@ const GSC_TAB = (() => {
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
             <div class="panel__title" style="font-size:13px">Top Countries</div>
-            <button class="btn btn-ghost btn-sm" onclick="GSC_TAB._exportCountries()">⬇ CSV</button>
           </div>
           <div class="data-table-wrap"><table class="data-table" id="gsc-country-table">
             <thead><tr><th>Country</th><th class="num">Clicks</th><th class="num">Impressions</th><th class="num">CTR</th><th class="num">Position</th></tr></thead>
@@ -393,12 +404,6 @@ const GSC_TAB = (() => {
         window._gscDevicesData = devices; window._gscCountriesData = countries;
     }
 
-    function _exportDevices() {
-        exportCSV((window._gscDevicesData || []).map(r => [r.device, r.clicks, r.impressions, fPct(r.ctr), fPos(r.position)]), ['Device', 'Clicks', 'Impressions', 'CTR', 'Position'], 'gsc-devices.csv');
-    }
-    function _exportCountries() {
-        exportCSV((window._gscCountriesData || []).map(r => [r.country, r.clicks, r.impressions, fPct(r.ctr), fPos(r.position)]), ['Country', 'Clicks', 'Impressions', 'CTR', 'Position'], 'gsc-countries.csv');
-    }
 
     // ── Load All ─────────────────────────────────────────────────
     function loadAll(siteUrl, sd, ed) {
@@ -411,7 +416,6 @@ const GSC_TAB = (() => {
     return {
         loadAll, loadOverview, loadQueryIntelligence, loadPagePerformance, loadDevicesCountries,
         _dotOver, _dotOut, _switchQueryTab, _filterPages, _exportPages,
-        _exportTop50, _exportCtrOpps, _exportRankOpps,
-        _exportDevices, _exportCountries, renderSVGChart
+        _exportTop50, _exportCtrOpps, _exportRankOpps, renderSVGChart
     };
 })();

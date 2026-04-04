@@ -156,14 +156,17 @@ window.DASHBOARD = (() => {
         if (!property) return;
         setLoading(true, 'Loading LLM data…');
         try {
+            const propId = property.id;
+            const psd = state.compareMode ? state.prevStartDate : false;
+            const ped = state.compareMode ? state.prevEndDate : false;
             const [kpiData, dailyLLM, dailyAll, sourceData, llmDetail, wowData, momData, landingPages, engQuality] =
                 await Promise.all([
-                    GA4_API.fetchKPIs(property.id, sd, ed),
+                    GA4_API.fetchKPIs(property.id, sd, ed, psd, ped),
                     GA4_API.fetchDailyLLMSessions(property.id, sd, ed),
                     GA4_API.fetchDailyAllSessions(property.id, sd, ed),
                     GA4_API.fetchSourceBreakdown(property.id, sd, ed),
                     GA4_API.fetchLLMSourceDetail(property.id, sd, ed),
-                    GA4_API.fetchWoW(property.id, sd, ed),
+                    GA4_API.fetchWoW(property.id, sd, ed, psd, ped),
                     GA4_API.fetchMoMBySource(property.id),
                     GA4_API.fetchTopLandingPages(property.id, sd, ed),
                     GA4_API.fetchEngagementQuality(property.id, sd, ed)
@@ -201,7 +204,9 @@ window.DASHBOARD = (() => {
         const { property, startDate: sd, endDate: ed } = state;
         if (!property) return;
         state.ga4Loaded = true;
-        GA4_TAB.loadAll(property.id, sd, ed);
+        const psd = state.compareMode ? state.prevStartDate : false;
+        const ped = state.compareMode ? state.prevEndDate : false;
+        GA4_TAB.loadAll(property.id, sd, ed, psd, ped);
         // Init scroll spy after a moment
         setTimeout(() => initScrollSpy('ga4-section-nav', 'ga4-sections'), 200);
     }
@@ -241,7 +246,9 @@ window.DASHBOARD = (() => {
             return;
         }
         // Store ga4TotalKeyEvents for blended CR calculation
-        BLENDED_TAB.loadAll(property.id, gscSiteUrl, sd, ed);
+        const psd = state.compareMode ? state.prevStartDate : false;
+        const ped = state.compareMode ? state.prevEndDate : false;
+        BLENDED_TAB.loadAll(property.id, gscSiteUrl, sd, ed, psd, ped);
     }
 
     // ── Global Refresh ────────────────────────────────────────────────
@@ -285,20 +292,13 @@ window.DASHBOARD = (() => {
     function updateCompareBadge() {
         const controls = document.getElementById('compare-date-controls');
         if (!controls) return;
-        document.getElementById('dash-prev-start').value = state.prevStartDate;
-        document.getElementById('dash-prev-end').value = state.prevEndDate;
+        const input = document.getElementById('dash-compare-range');
+        if (input && input._flatpickr) {
+            input._flatpickr.setDate([state.prevStartDate, state.prevEndDate]);
+        }
         controls.style.display = 'flex';
     }
 
-    // ── PDF/PPT Export ────────────────────────────────────────────────
-    function exportPDF() {
-        if (window.PPT_EXPORT) {
-            PPT_EXPORT.openModal();
-        } else {
-            toast('Preparing PDF…', 'info', 2000);
-            setTimeout(() => window.print(), 300);
-        }
-    }
 
     // ── Date Picker ───────────────────────────────────────────────────
     function initDatePicker() {
@@ -315,11 +315,41 @@ window.DASHBOARD = (() => {
                     state.preset = 'custom';
                     state.startDate = selectedDates[0].toISOString().slice(0, 10);
                     state.endDate = selectedDates[1].toISOString().slice(0, 10);
+
+                    // Auto-compute prev period for custom range
+                    const s = selectedDates[0], e = selectedDates[1];
+                    const days = Math.round((e - s) / 86400000) + 1;
+                    const ps = new Date(s); ps.setDate(ps.getDate() - days);
+                    const pe = new Date(s); pe.setDate(pe.getDate() - 1);
+                    state.prevStartDate = ps.toISOString().slice(0, 10);
+                    state.prevEndDate = pe.toISOString().slice(0, 10);
+                    
+                    // Update comparison UI inputs
+                    updateCompareBadge();
+
                     state.llmLoaded = false; state.ga4Loaded = false; state.gscLoaded = false; state.blendedLoaded = false;
                     refreshActive();
                 }
             }
         });
+
+        const compareInput = document.getElementById('dash-compare-range');
+        if (compareInput && window.flatpickr) {
+            flatpickr(compareInput, {
+                mode: 'range', dateFormat: 'Y-m-d',
+                altInput: true, altFormat: 'M j, Y',
+                maxDate: 'today', disableMobile: false,
+                onChange: (selectedDates) => {
+                    if (selectedDates.length === 2) {
+                        state.prevStartDate = selectedDates[0].toISOString().slice(0, 10);
+                        state.prevEndDate = selectedDates[1].toISOString().slice(0, 10);
+                        state.llmLoaded = false; state.ga4Loaded = false; state.gscLoaded = false; state.blendedLoaded = false;
+                        refreshActive();
+                    }
+                }
+            });
+        }
+
     }
 
     // ── Event Wiring ──────────────────────────────────────────────────
@@ -343,15 +373,8 @@ window.DASHBOARD = (() => {
 
         // Compare button & inputs
         document.getElementById('compare-btn')?.addEventListener('click', toggleCompare);
-        document.getElementById('dash-prev-start')?.addEventListener('change', e => {
-            if (e.target.value) { state.prevStartDate = e.target.value; refreshActive(); }
-        });
-        document.getElementById('dash-prev-end')?.addEventListener('change', e => {
-            if (e.target.value) { state.prevEndDate = e.target.value; refreshActive(); }
-        });
 
-        // PDF button
-        document.getElementById('pdf-btn')?.addEventListener('click', exportPDF);
+
 
         // Switch Property
         document.getElementById('switch-property-btn')?.addEventListener('click', showPicker);
